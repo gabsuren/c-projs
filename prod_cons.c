@@ -125,18 +125,14 @@ int main() {
         perror(FILE_NAME);
         return 1;
     }
-
     srand(time(0));
     queue = create_queue();
-
     if(NULL == queue) {
         perror("Ring queue allocation failed");
         return 1;
     }
-
     fprintf(stderr, "To terminate the progran use Ctrl+C.\n");
     signal(SIGINT, ctrl_c);
-
     // Create producer threads
     for(int i = 0; queue->run && i < N; i++) {
         if (pthread_create(pp++, 0, producer, 0)) {
@@ -151,7 +147,6 @@ int main() {
             queue->run = 0;
         }
     }
-
     wait_for_stop_and_report(queue);
     join_all_workers(thread_pool, pp);
     free_queue(queue);
