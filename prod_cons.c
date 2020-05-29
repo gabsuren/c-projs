@@ -38,13 +38,13 @@ static c_queue* create_queue() {
     q->run = 1;
     q->saturation = Q_SIZE;
     pthread_mutex_init(&q->queue_locker, NULL);
-	pthread_cond_init(&q->prod_locker, NULL);
-	pthread_cond_init(&q->cons_locker, NULL);
+    pthread_cond_init(&q->prod_locker, NULL);
+    pthread_cond_init(&q->cons_locker, NULL);
     return q;
 }
 
 void ctrl_c(int sig) {
-		queue->run = 0;
+    queue->run = 0;
 }
 
 // Producer function. Generates random numbers and puts inside queue. 
@@ -97,23 +97,23 @@ void* consumer(void* c) {
 }
 
 static void free_queue(c_queue* queue) {
-	pthread_cond_destroy(&queue->prod_locker);
-	pthread_cond_destroy(&queue->cons_locker);
-	pthread_mutex_destroy(&queue->queue_locker);
+    pthread_cond_destroy(&queue->prod_locker);
+    pthread_cond_destroy(&queue->cons_locker);
+    pthread_mutex_destroy(&queue->queue_locker);
     free(queue);
 }
 
 static void wait_for_stop_and_report(c_queue* queue) {
-	while(queue->run) {
-		sleep(1);
-		fprintf(stderr, "==========Count: %d==========\n", queue->count);
-	}
+    while(queue->run) {
+        sleep(1);
+        fprintf(stderr, "==========Count: %d==========\n", queue->count);
+    }
 }
 
 static void join_all_workers(pthread_t* first, pthread_t* end) {
-	while(first < end) {
-		pthread_join(*first++, 0);
-	}
+    while(first < end) {
+        pthread_join(*first++, 0);
+    }
 }
 
 int main() {
@@ -122,9 +122,9 @@ int main() {
     file = fopen(FILE_NAME, "w");
 
     if(NULL == file) {	
-		perror(FILE_NAME);
-		return 1;
-	}
+        perror(FILE_NAME);
+        return 1;
+    }
 
     srand(time(0));
     queue = create_queue();
@@ -141,7 +141,7 @@ int main() {
     for(int i = 0; queue->run && i < N; i++) {
         if (pthread_create(pp++, 0, producer, 0)) {
             perror("Create producer thread");
-			queue->run = 0;
+            queue->run = 0;
         }
     }
 
@@ -149,14 +149,14 @@ int main() {
     for(int i = 0; queue->run && i < M; i++) {
         if(pthread_create(pp++, 0, consumer, 0)) {
             perror("Create consumer thread");
-			queue->run = 0;
+            queue->run = 0;
         }
     }
 
     wait_for_stop_and_report(queue);
     join_all_workers(thread_pool, pp);
     free_queue(queue);
-	fclose(file);
+    fclose(file);
 
     return 0;
 }
