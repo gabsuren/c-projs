@@ -12,12 +12,12 @@ The application must be stopped by pressing Ctrl+C
 #define N 10
 #define M 10
 
-#define c_queue_SIZE 100
+#define Q_SIZE 100
 #define THRESHOLD 80
 #define FILE_NAME "data.txt"
 
 typedef struct c_queue_t {
-    int buff[c_queue_SIZE];
+    int buff[Q_SIZE];
     int count;
     int saturation;
     int idx_prod;                 // write pos for producer
@@ -28,22 +28,20 @@ typedef struct c_queue_t {
     pthread_cond_t cons_locker;   // locks the consumer when buffer is empty, resumed by producers signal 
 } c_queue;
 
-
 c_queue* queue = NULL;
 FILE* file = NULL;
 
 static c_queue* create_queue() {
-    c_queue *q = (c_queue*)malloc(sizeof(c_queue));
+    c_queue* q = (c_queue*)malloc(sizeof(c_queue));
     q->idx_prod = q->idx_cons = 0;
     q->count = 0;
     q->run = 1;
-    q->saturation = c_queue_SIZE;
+    q->saturation = Q_SIZE;
     pthread_mutex_init(&q->queue_locker, NULL);
 	pthread_cond_init(&q->prod_locker, NULL);
 	pthread_cond_init(&q->cons_locker, NULL);
     return q;
 }
-
 
 void ctrl_c(int sig) {
 		queue->run = 0;
@@ -62,9 +60,9 @@ void* producer(void* c) {
             pthread_mutex_unlock(&queue->queue_locker);
             continue;
         }
-        queue->saturation = c_queue_SIZE;
+        queue->saturation = Q_SIZE;
         queue->buff[queue->idx_prod++] = rand() % 101;
-        queue->idx_prod %= c_queue_SIZE;
+        queue->idx_prod %= Q_SIZE;
         queue->count++;
         pthread_cond_signal(&queue->cons_locker);
         pthread_mutex_unlock(&queue->queue_locker);
@@ -89,7 +87,7 @@ void* consumer(void* c) {
             }
         }
         fprintf(file, "%d,", queue->buff[queue->idx_cons++]);
-        queue->idx_cons %= c_queue_SIZE;	
+        queue->idx_cons %= Q_SIZE;	
         queue->count--;
         pthread_cond_signal(&queue->prod_locker);
         pthread_mutex_unlock(&queue->queue_locker);
@@ -118,20 +116,23 @@ static void join_all_workers(pthread_t* first, pthread_t* end) {
 	}
 }
 
-
 int main() {
     pthread_t thread_pool[N + M];
-    pthread_t *pp = thread_pool;
+    pthread_t* pp = thread_pool;
     file = fopen(FILE_NAME, "w");
 
-    if(!file) {	
+    if(NULL == file) {	
 		perror(FILE_NAME);
 		return 1;
 	}
 
     srand(time(0));
-
     queue = create_queue();
+
+    if(NULL == queue) {
+        perror("Ring queue allocation failed");
+        return 1;
+    }
 
     fprintf(stderr, "To terminate the progran use Ctrl+C.\n");
     signal(SIGINT, ctrl_c);
@@ -153,7 +154,6 @@ int main() {
     }
 
     wait_for_stop_and_report(queue);
-
     join_all_workers(thread_pool, pp);
     free_queue(queue);
 	fclose(file);
