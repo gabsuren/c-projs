@@ -144,7 +144,6 @@ int main() {
             queue->run = 0;
         }
     }
-
     // Create consumer threads
     for(int i = 0; queue->run && i < M; i++) {
         if(pthread_create(pp++, 0, consumer, 0)) {
@@ -157,6 +156,5 @@ int main() {
     join_all_workers(thread_pool, pp);
     free_queue(queue);
     fclose(file);
-
     return 0;
 }
